@@ -1,0 +1,11 @@
+source:
+- name: High View
+  video: yes
+  audio: yes
+  rtsp: rtsps://<IP>:<PORT>/deweAWERFfsdp?enableSrtps
+  output: /scratch2/Recordings/Output
+- name: Office
+  video: yes
+  audio: yes
+  rtsp: rtsp://<USER>:<PWD>@192.168.182.130:554/live
+  output: /scratch2/Recordings/Output
