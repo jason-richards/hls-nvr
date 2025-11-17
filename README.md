@@ -91,19 +91,26 @@ NVR/
 
 ## Usage
 
-1. Ensure the output directory exists and the process has write access:
+1. Build and install the project. It will install hls-nvr in /etc/hls-nvr
+```bash
+sudo make all install
+```
+
+2. Ensure the output directory exists and the process has write access:
 
 ```bash
 mkdir -p /scratch2/Recordings/Output
 ```
 
-2. Start the recording process (example):
+3. Edit the hls-nvr configuration yaml file to point at your cameras.
+
+4. Start the recording process (example):
 
 ```bash
 sudo service hls-nvr start
 ```
 
-3. Access recordings via HLS player using `master.m3u8`. Both AAC and Opus audio are supported.
+5. Access recordings via HLS player using `master.m3u8`. Both AAC and Opus audio are supported.
 
 ---
 
