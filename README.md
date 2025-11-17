@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project captures video and audio streams from configured sources and outputs them into a structured directory hierarchy suitable for HLS playback. Each source may have multiple audio formats and a video stream, stored in separate directories with corresponding fragment files (`.m4s`) and initialization segments (`init.mp4`).
+This project captures video and audio streams from configured sources (RTSP feeds from security cameras) and outputs them into a structured directory hierarchy suitable for HLS playback. Each source may have multiple audio formats and a video stream, stored in separate directories with corresponding fragment files (`.m4s`) and initialization segments (`init.mp4`).
 
 ---
 
@@ -14,7 +14,7 @@ This project captures video and audio streams from configured sources and output
 |----------|-------|
 | Video    | Yes   |
 | Audio    | Yes   |
-| RTSP URL | `rtsps://192.168.182.145:7441/ggGdsd223dsdsd3?enableSrtps` |
+| RTSP URL | `rtsps://<IP>:<PORT>/ggGdsd223dsdsd3?enableSrtps` |
 | Output Directory | `/scratch2/Recordings/Output` |
 
 > The source named **Left Garage** captures both video and audio from the RTSP stream and saves it to the output directory.
@@ -36,6 +36,7 @@ NVR/
         │   │   └── 16-00-10.m4s
         │   └── opus/
         │       ├── init.mp4
+        │       ├── audio.m3u8
         │       ├── 16-00-00.m4s
         │       ├── 16-00-05.m4s
         │       └── 16-00-10.m4s
@@ -90,16 +91,16 @@ NVR/
 
 ## Usage
 
-1. Ensure the output directory exists:
+1. Ensure the output directory exists and the process has write access:
 
 ```bash
-mkdir -p /scratch2/Recordings/Output/NVR/Left\ Garage
+mkdir -p /scratch2/Recordings/Output
 ```
 
 2. Start the recording process (example):
 
 ```bash
-python record.py --config config.yaml
+sudo service hls-nvr start
 ```
 
 3. Access recordings via HLS player using `master.m3u8`. Both AAC and Opus audio are supported.
