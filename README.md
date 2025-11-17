@@ -6,9 +6,9 @@ This project captures video and audio streams from configured sources (RTSP feed
 
 ---
 
-## Configured Sources
+## Configured Sources - config.yaml
 
-### Left Garage
+### Office
 
 | Property | Value |
 |----------|-------|
@@ -17,7 +17,7 @@ This project captures video and audio streams from configured sources (RTSP feed
 | RTSP URL | `rtsps://<IP>:<PORT>/ggGdsd223dsdsd3?enableSrtps` |
 | Output Directory | `/scratch2/Recordings/Output` |
 
-> The source named **Left Garage** captures both video and audio from the RTSP stream and saves it to the output directory.
+> The source named **Office** captures both video and audio from the RTSP stream and saves it to the output directory.
 
 ---
 
