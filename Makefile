@@ -1,7 +1,14 @@
 # Compiler and flags
 CXX := g++
-CXXFLAGS := -std=c++20 -g $(shell pkg-config --cflags libavcodec libavformat libavutil libswresample libswscale yaml-cpp)
+CXXFLAGS := -std=c++20 $(shell pkg-config --cflags libavcodec libavformat libavutil libswresample libswscale yaml-cpp)
 LDLIBS := $(shell pkg-config --libs libavcodec libavformat libavutil libswresample libswscale yaml-cpp)
+BUILD_TYPE ?= release
+
+ifeq ($(BUILD_TYPE), release)
+    CXXFLAGS += -O3
+else ifeq ($(BUILD_TYPE), debug)
+    CXXFLAGS += -DDEBUG -g
+endif
 
 # Source and object files
 SRCS := ConfigSources.cpp M3U8Generator.cpp main.cpp

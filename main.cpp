@@ -9,8 +9,6 @@
 #include <map>
 
 #include "FFmpegCPPIncludes.hpp"
-#include <libavutil/intreadwrite.h>
-#include <libavutil/avutil.h>
 
 #include "ConfigSources.hpp"
 #include "M3U8Generator.hpp"
@@ -108,9 +106,11 @@ GetBaseMediaDecodeTime(
     uint8_t buf[16];
     uint64_t decode_time = 0;
     while (!avio_feof(pb)) {
-        if (avio_read(pb, buf, 4) != 4)
+        int64_t pos = avio_tell(pb);
+        if (avio_read(pb, buf, 8) != 8)
             break;
-        uint32_t type = AV_RL32(buf);
+        uint32_t size = AV_RB32(buf);
+        uint32_t type = AV_RL32(buf + 4);
         if (type == MKTAG('t','f','d','t')) {
             // read version + flags (4 bytes)
             avio_read(pb, buf, 4);
@@ -124,6 +124,14 @@ GetBaseMediaDecodeTime(
             }
             break;
         }
+        if (type == MKTAG('m','o','o','f') ||
+            type == MKTAG('t','r','a','f')
+        ) {
+            size=8;
+        }
+
+        if (size < 8) break; // invalid atom
+        avio_seek(pb, pos + size, SEEK_SET);
     }
 
     avio_close(pb);
@@ -334,7 +342,6 @@ public:
         if (!m_PTSOffset) {
             int64_t pts_offset = 0;
             std::tm* t = std::localtime(&ts);
-            std::cout << t->tm_hour << ":" << t->tm_min << ":" << t->tm_sec << std::endl;
             pts_offset += t->tm_hour * 60 * 60;
             pts_offset += t->tm_min  * 60;
             pts_offset += t->tm_sec;
@@ -586,7 +593,7 @@ transmux_rtsp_to_hls(
     auto prev = std::chrono::system_clock::now();
 
     do {
-        // Bring the whole thing down and Midnight; let systemd bring it back up
+        // Bring the whole thing down at Midnight; let systemd bring it back up
         auto now = std::chrono::system_clock::now();
         if (DayRolledOver(prev, now)) {
             done.store(true, std::memory_order_relaxed);
@@ -606,6 +613,7 @@ transmux_rtsp_to_hls(
                 if (retries-- <= 0) {
                     done.store(true, std::memory_order_relaxed);
                 }
+                packet.reset();
                 continue;
             }
         } catch (const TimeoutException& e) {
@@ -613,18 +621,21 @@ transmux_rtsp_to_hls(
             if (retries-- <= 0) {
                 done.store(true, std::memory_order_relaxed);
             }
+            packet.reset();
             continue;
         } catch (const std::exception& e) {
             std::cerr << "unknown exception encountered in av_read_frame.\n";
             if (retries-- <= 0) {
                 done.store(true, std::memory_order_relaxed);
             }
+            packet.reset();
             continue;
         }
 
         retries = MAX_RETRIES;
 
         if (packet->pts == AV_NOPTS_VALUE) {
+            packet.reset();
             continue;
         }
 
@@ -640,6 +651,7 @@ transmux_rtsp_to_hls(
         }
 
         output_streams[packet->stream_index]->WritePacket(packet);
+        packet.reset();
     } while (!done.load(std::memory_order_relaxed));
 
     metadata_watcher.join();

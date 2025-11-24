@@ -5,14 +5,9 @@ After=syslog.target network.target sound.target
 [Service]
 User=jrichard
 Environment=DISPLAY=:0
-#Environment=LD_LIBRARY_PATH=/etc/hls-nvr/lib
-#Group=admin
-#Group=audio
 Type=simple
 Restart=always
-RestartSec=5
 ExecStart=/etc/hls-nvr/bin/hls-nvr /etc/hls-nvr/config.yaml
-#ExecStart=/usr/bin/feed-decoder /etc/feed-decoder/config.yaml
 StandardOutput=append:/var/log/hls-nvr/hls-nvr.log	
 StandardError=append:/var/log/hls-nvr/hls-nvr.log
 SyslogIdentifier=hls-nvr

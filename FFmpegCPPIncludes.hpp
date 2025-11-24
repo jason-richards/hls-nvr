@@ -14,6 +14,8 @@ extern "C" {
 #include <libavutil/mem.h>
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/intreadwrite.h>
+#include <libavutil/avutil.h>
 
 #ifdef av_err2str
 #undef av_err2str
