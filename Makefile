@@ -11,7 +11,7 @@ else ifeq ($(BUILD_TYPE), debug)
 endif
 
 # Source and object files
-SRCS := ConfigSources.cpp M3U8Generator.cpp main.cpp
+SRCS := ConfigSources.cpp ConfigPluginDir.cpp M3U8Generator.cpp PluginManager.cpp main.cpp
 OBJS := $(SRCS:.cpp=.o)
 
 # Output executable
@@ -37,9 +37,11 @@ clean:
 .PHONY: all clean
 
 install: $(TARGET)
-	sudo install -Dm755 etc/hls-nvr/config.yaml      /etc/hls-nvr/config.yaml
-	sudo install -Dm755 etc/systemd/system/hls-nvr.service      /etc/systemd/system
+	sudo install -Dm644 etc/systemd/system/hls-nvr.service /etc/systemd/system
 	sudo install -Dm755 $(TARGET) $(INSTALL_DIR)/bin/$(TARGET)
 	sudo systemctl daemon-reload
 	sudo systemctl enable hls-nvr.service
 	sudo systemctl start hls-nvr.service
+
+install_config: $(TARGET)
+	sudo install -Dm644 etc/hls-nvr/config.yaml /etc/hls-nvr/config.yaml

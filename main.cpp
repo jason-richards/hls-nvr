@@ -11,12 +11,14 @@
 #include "FFmpegCPPIncludes.hpp"
 
 #include "ConfigSources.hpp"
+#include "ConfigPluginDir.hpp"
 #include "M3U8Generator.hpp"
+#include "PluginManager.hpp"
 
 #define MAX_RETRIES 3
 
 namespace fs = std::filesystem;
-
+Plugins::PluginManager g_PM;
 
 AVFormatObj::AVFormatContextPtr
 ConnectInput(
@@ -416,7 +418,6 @@ public:
         M3U8::M3U8BasePtr m = M3U8::Create(m3u8, m_Format);
         std::cout << path << std::endl;
         auto files = list_m4s_files_by_mtime(base_path);
-        std::ofstream of(path, std::ios::trunc);
 
         std::string prev_file;
         int64_t prev_dts = 0; 
@@ -446,7 +447,10 @@ public:
             prev_file = f;
             prev_dts = dts;
         }
+        std::ofstream of(path, std::ios::trunc);
         of << m;
+        of.flush();
+        of.close();
     }
 
 
@@ -558,7 +562,7 @@ VerifyMasterM3U8(
 
 void
 transmux_rtsp_to_hls(
-    Config::Sources::SourcePtr source
+    const Config::Sources::SourcePtr& source
 ) {
     AVFormatObj::AVFormatContextPtr input_fmt  = ConnectInput(source->url);
     std::map<int, OutputStream::OutputStreamPtr> output_streams;
@@ -566,14 +570,15 @@ transmux_rtsp_to_hls(
     for (int i = 0; i < input_fmt->nb_streams; i++) {
         AVStream *in_stream = input_fmt->streams[i];
         output_streams[in_stream->index] = OutputStream::Create(source, in_stream);
+        g_PM.Configure(source, in_stream);
     }
 
     std::atomic<bool> done{false};
     auto metadata_watcher = std::thread(
         [&]{
             while (!done.load(std::memory_order_relaxed)) {
-                // Step 1 : Wake up Every 10 Seconds to do Checks
-                std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+                // Step 1 : Wake up Every 30 Seconds to do Checks
+                std::this_thread::sleep_for(std::chrono::seconds(30));
 
                 // Step 2 : Verify Master M3U8 exists
                 VerifyMasterM3U8(input_fmt, source->output, source->name);
@@ -650,7 +655,9 @@ transmux_rtsp_to_hls(
             }
         }
 
+        g_PM.OnPacket(packet.get());
         output_streams[packet->stream_index]->WritePacket(packet);
+
         packet.reset();
     } while (!done.load(std::memory_order_relaxed));
 
@@ -673,6 +680,12 @@ main(
 
     avformat_network_init();
 
+
+    std::string plugins = Config::PluginDir::GetPluginDir(argv[1]);
+    int n = g_PM.load_directory(plugins);
+    std::cout << "Loaded: " << n << " plugins.\n\n";
+
+
     std::vector<std::thread> sources;
     for (auto source : Config::Sources::GetSources(argv[1])) {
         sources.push_back(
@@ -687,6 +700,8 @@ main(
     for (auto& source : sources) {
         source.join();
     }
+
+    g_PM.OnExit();
 
     return 0;
 }
